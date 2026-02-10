@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latihan Dada Harian</title>
+
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #e3f2fd, #ffffff);
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    padding: 22px;
+    width: 90%;
+    max-width: 420px;
+    text-align: center;
+  }
+
+  h1 {
+    color: #1565c0;
+    margin-bottom: 6px;
+  }
+
+  .counter {
+    color: #1565c0;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  button {
+    background: #1976d2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: 0.2s;
+  }
+
+  button:hover {
+    background: #0d47a1;
+    transform: scale(1.05);
+  }
+
+  .info {
+    font-size: 0.9em;
+    color: #555;
+    margin-top: 10px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h1>Latihan Dada Harian</h1>
+  <div class="counter" id="progress"></div>
+  <div id="exercise"></div>
+  <button id="doneBtn" onclick="finish()">Selesai Hari Ini</button>
+  <div class="info" id="msg"></div>
+</div>
+
+<script>
+/* ===== KONFIGURASI ===== */
+const COOLDOWN_HOURS = 14;
+const MAX_DAY = 30;
+const STORAGE_KEY = "gym_dada_progress";
+
+/* ===== DATA ===== */
+const exercises = [
+  "Push Up",
+  "Bench Press",
+  "Incline Dumbbell Press",
+  "Chest Fly",
+  "Renang"
+];
+
+let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+  day: 1,
+  streak: 0,
+  lastDone: 0,
+  lockedUntil: 0
+};
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+/* ===== RENDER UI ===== */
+function render() {
+  const now = Date.now();
+  const ex = document.getElementById("exercise");
+  const msg = document.getElementById("msg");
+  const btn = document.getElementById("doneBtn");
+
+  document.getElementById("progress").innerText =
+    `Hari ${data.day} • Streak ${data.streak}🔥`;
+
+  if (now < data.lockedUntil) {
+    btn.style.display = "none";
+    ex.innerHTML = `<b>Tunggu ${formatTime(data.lockedUntil - now)}</b>`;
+    msg.innerText = "Cooldown latihan belum selesai";
+    return;
+  }
+
+  if (data.day > MAX_DAY) {
+    btn.style.display = "none";
+    ex.innerHTML = "🎉 Program dada 30 hari selesai!";
+    msg.innerText = "Kamu bisa mulai ulang kapan saja.";
+    return;
+  }
+
+  const type = exercises[(data.day - 1) % exercises.length];
+  const reps = Math.min(10 + data.day * 2, 60);
+
+  ex.innerHTML = `
+    <h3>Hari ${data.day}: ${type}</h3>
+    <p>${reps} repetisi</p>
+  `;
+
+  btn.style.display = "inline-block";
+  msg.innerText = "Selesaikan latihan hari ini";
+}
+
+/* ===== ACTION ===== */
+function finish() {
+  const now = Date.now();
+
+  if (now - data.lastDone < 48 * 60 * 60 * 1000) {
+    data.streak++;
+  } else {
+    data.streak = 1;
+  }
+
+  data.lastDone = now;
+  data.lockedUntil = now + COOLDOWN_HOURS * 60 * 60 * 1000;
+  data.day++;
+
+  save();
+  render();
+}
+
+/* ===== UTIL ===== */
+function formatTime(ms) {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  return `${h} jam ${m} menit`;
+}
+
+setInterval(render, 1000);
+render();
+</script>
+
+</body>
+</html>
