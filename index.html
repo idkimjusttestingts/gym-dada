@@ -1,168 +1,204 @@
-<!DOCTYPE html>
-<html lang="id">
+<!doctype html>
+
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Latihan Dada Harian</title>
-
-<style>
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #e3f2fd, #ffffff);
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .card {
-    background: #ffffff;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    padding: 22px;
-    width: 90%;
-    max-width: 420px;
-    text-align: center;
-  }
-
-  h1 {
-    color: #1565c0;
-    margin-bottom: 6px;
-  }
-
-  .counter {
-    color: #1565c0;
-    font-weight: bold;
-    margin-bottom: 10px;
-  }
-
-  button {
-    background: #1976d2;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 14px;
-    transition: 0.2s;
-  }
-
-  button:hover {
-    background: #0d47a1;
-    transform: scale(1.05);
-  }
-
-  .info {
-    font-size: 0.9em;
-    color: #555;
-    margin-top: 10px;
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Legs Daily</title>
+  <style>
+    /* clean white design with green accent */
+    body{
+      font-family:system-ui,Arial;
+      margin:28px;
+      background:#ffffff;
+      color:#000000;
+    }
+    .card{
+      background:#f6fff7;
+      padding:18px;
+      border-radius:12px;
+      max-width:520px;
+      border:1px solid #dcfce7;
+    }
+    h2{
+      margin:0 0 10px 0;
+      color:#16a34a; /* green title */
+    }
+    .row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin:8px 0;
+    }
+    .small{
+      font-size:13px;
+      color:#000000;
+    }
+    .label{
+      color:#16a34a; /* green section labels */
+      font-weight:600;
+      font-size:13px;
+    }
+    button{
+      padding:10px 14px;
+      border-radius:8px;
+      border:none;
+      background:#16a34a;
+      color:white;
+      font-weight:700;
+      cursor:pointer;
+    }
+    button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+    .reset{
+      background:transparent;
+      border:1px solid #16a34a;
+      color:#16a34a;
+      padding:9px 12px;
+    }
+    .list{
+      margin-top:12px;
+      border-top:1px solid #e5e7eb;
+      padding-top:10px;
+    }
+    .ex{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:8px 0;
+      border-bottom:1px dashed #e5e7eb;
+    }
+    .ex .name{
+      font-weight:600;
+      color:#000000;
+    }
+    .ex .qty{
+      font-weight:700;
+      color:#16a34a;
+    }
+    .muted{
+      font-size:13px;
+      color:#444444;
+    }
+  </style>
 </head>
-
 <body>
-
-<div class="card">
-  <h1>Latihan Dada Harian</h1>
-  <div class="counter" id="progress"></div>
-  <div id="exercise"></div>
-  <button id="doneBtn" onclick="finish()">Selesai Hari Ini</button>
-  <div class="info" id="msg"></div>
+  <div class="card">
+    <h2 id="dayText">Day 1 / 360</h2><div class="row">
+  <div class="label">Muscle</div>
+  <div class="small">Legs</div>
 </div>
 
-<script>
-/* ===== KONFIGURASI ===== */
-const COOLDOWN_HOURS = 14;
-const MAX_DAY = 30;
-const STORAGE_KEY = "gym_dada_progress";
+<div class="row">
+  <div class="label">Difficulty</div>
+  <div id="diffText" class="small">1</div>
+</div>
 
-/* ===== DATA ===== */
-const exercises = [
-  "Push Up",
-  "Bench Press",
-  "Incline Dumbbell Press",
-  "Chest Fly",
-  "Renang"
-];
+<div class="row">
+  <div class="label">Next unlock</div>
+  <div id="timerText" class="small">Ready</div>
+</div>
 
-let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
-  day: 1,
-  streak: 0,
-  lastDone: 0,
-  lockedUntil: 0
-};
+<div class="list" id="trainingList"></div>
 
-function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
+<div style="margin-top:12px;display:flex;gap:8px">
+  <button id="doneBtn">Selesai Hari Ini</button>
+  <button id="resetBtn" class="reset">Reset</button>
+</div>
 
-/* ===== RENDER UI ===== */
-function render() {
-  const now = Date.now();
-  const ex = document.getElementById("exercise");
-  const msg = document.getElementById("msg");
-  const btn = document.getElementById("doneBtn");
+  </div><script>
+  // minimal variables
+  var MAX_DAYS = 360;
+  var WAIT_SECONDS = 12 * 3600;
+  var KEY = 'legs_daily_v1';
 
-  document.getElementById("progress").innerText =
-    `Hari ${data.day} • Streak ${data.streak}🔥`;
+  // legs exercises requested by user
+  var LEGS = [
+    ['Lunge','reps',12],
+    ['Squat','reps',12],
+    ['Deadlift','reps',8],
+    ['Side leg raise','reps',15]
+  ];
 
-  if (now < data.lockedUntil) {
-    btn.style.display = "none";
-    ex.innerHTML = `<b>Tunggu ${formatTime(data.lockedUntil - now)}</b>`;
-    msg.innerText = "Cooldown latihan belum selesai";
-    return;
+  var data = loadData();
+
+  function loadData(){
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return { day:1, deadline:0 };
+    try{ return JSON.parse(raw); }catch(e){ return { day:1, deadline:0 }; }
   }
 
-  if (data.day > MAX_DAY) {
-    btn.style.display = "none";
-    ex.innerHTML = "🎉 Program dada 30 hari selesai!";
-    msg.innerText = "Kamu bisa mulai ulang kapan saja.";
-    return;
+  function saveData(){
+    localStorage.setItem(KEY, JSON.stringify(data));
   }
 
-  const type = exercises[(data.day - 1) % exercises.length];
-  const reps = Math.min(10 + data.day * 2, 60);
-
-  ex.innerHTML = `
-    <h3>Hari ${data.day}: ${type}</h3>
-    <p>${reps} repetisi</p>
-  `;
-
-  btn.style.display = "inline-block";
-  msg.innerText = "Selesaikan latihan hari ini";
-}
-
-/* ===== ACTION ===== */
-function finish() {
-  const now = Date.now();
-
-  if (now - data.lastDone < 48 * 60 * 60 * 1000) {
-    data.streak++;
-  } else {
-    data.streak = 1;
+  function completeToday(){
+    var now = Math.floor(Date.now()/1000);
+    if(now < data.deadline) return;
+    data.deadline = now + WAIT_SECONDS;
+    data.day = Math.min(data.day + 1, MAX_DAYS);
+    saveData();
+    updateUI();
   }
 
-  data.lastDone = now;
-  data.lockedUntil = now + COOLDOWN_HOURS * 60 * 60 * 1000;
-  data.day++;
+  function getDifficulty(d){
+    return Math.floor((d - 1) / 3) + 1;
+  }
 
-  save();
-  render();
-}
+  function computeQty(base, day){
+    var lvl = getDifficulty(day);
+    var q = Math.round(base * (1 + (lvl - 1) * 0.02));
+    if(q < 1) q = 1;
+    return q;
+  }
 
-/* ===== UTIL ===== */
-function formatTime(ms) {
-  const totalSeconds = Math.ceil(ms / 1000);
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  return `${h} jam ${m} menit`;
-}
+  function formatTime(sec){
+    var h = Math.floor(sec/3600);
+    var m = Math.floor((sec%3600)/60);
+    var s = sec % 60;
+    return h + "j " + m + "m " + s + "d";
+  }
 
-setInterval(render, 1000);
-render();
-</script>
+  function updateUI(){
+    var now = Math.floor(Date.now()/1000);
+    var rem = Math.max(0, data.deadline - now);
 
-</body>
+    document.getElementById('dayText').textContent =
+      data.day >= MAX_DAYS ? "Day 360 — Finished" : "Day " + data.day + " / 360";
+
+    document.getElementById('diffText').textContent = getDifficulty(data.day);
+    document.getElementById('timerText').textContent =
+      rem > 0 ? formatTime(rem) : (data.day >= MAX_DAYS ? 'Done' : 'Ready');
+
+    document.getElementById('doneBtn').disabled =
+      rem > 0 || data.day >= MAX_DAYS;
+
+    var cont = document.getElementById('trainingList');
+    cont.innerHTML = '';
+    for(var i=0;i<LEGS.length;i++){
+      var e = LEGS[i];
+      var q = computeQty(e[2], data.day);
+      var div = document.createElement('div');
+      div.className = 'ex';
+      div.innerHTML =
+        '<div><div class="name">'+e[0]+'<\/div><div class="muted">Legs<\/div><\/div>' +
+        '<div class="qty">'+q+' '+e[1]+'<\/div>';
+      cont.appendChild(div);
+    }
+  }
+
+  document.getElementById('doneBtn').onclick = completeToday;
+  document.getElementById('resetBtn').onclick = function(){
+    if(confirm('Reset progress?')){
+      data = { day:1, deadline:0 };
+      saveData();
+      updateUI();
+    }
+  };
+
+  setInterval(updateUI, 1000);
+  updateUI();
+</script></body>
 </html>
